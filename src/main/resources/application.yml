@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:~/electric_tracking
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+server:
+  port: 8080
+data:
+  uri: D:/ThangPAL/electric-smartlogger-data
+  uri-backup: D:/ThangPAL/electric-smartlogger-data/backup
+  date:
+    format: yy-MM-dd HH:mm:ss
