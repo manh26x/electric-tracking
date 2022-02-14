@@ -11,4 +11,5 @@ public class Tags {
     @Id
     private String name;
     private String code;
+    private Long totalError;
 }

@@ -3,6 +3,7 @@ package com.mike.electrictracking.data.sync;
 import com.mike.electrictracking.entity.ReceiveValue;
 import com.mike.electrictracking.entity.Tags;
 import com.mike.electrictracking.repository.ReceiveValueRepository;
+import com.mike.electrictracking.repository.TagsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,8 @@ public class SyncDataFile {
 
     @Autowired
     private ReceiveValueRepository receiveValueRepository;
+    @Autowired
+    private TagsRepository tagsRepository;
 
     @Scheduled( initialDelay = 3 * 1000, fixedDelay =  30 * 60 * 1000)
     public void syncData() {
@@ -55,8 +58,12 @@ public class SyncDataFile {
                             if(line.startsWith("#Time")) {
                                 arrParamName = line.split(DELIMITER);
                             } else {
-                                tags.setName(line.split(" ")[0]);
+                                String rawTagName = line.split(" ")[0].trim();
+                                tags.setName(rawTagName.substring(1, rawTagName.length()));
                                 tags.setCode(line.split(" ")[1]);
+                                if(tagsRepository.existsById(tags.getName())) {
+                                    tags.setTotalError(tagsRepository.getTotalError(tags.getName()));
+                                }
                             }
                         } else {
                             String[] values = line.split(";");
@@ -64,14 +71,22 @@ public class SyncDataFile {
                             simpleDateFormat.applyPattern(dateFormat);
                             Date timeValue = simpleDateFormat.parse(values[0]);
                             for(int i =1; i < values.length; i++) {
+                                String paramName = arrParamName[i].trim();
+                                if(paramName.equals("Cycle Time")) {
+                                    continue;
+                                }
+                                if(paramName.equals("Error")) {
+                                    tags.setTotalError(tags.getTotalError() == null ?
+                                            Long.parseLong(values[i]) : tags.getTotalError() + Long.parseLong(values[i]));
+                                }
                                 Double value = Double.valueOf(values[i]);
                                 ReceiveValue receiveValue = new ReceiveValue();
                                 receiveValue.setParamValue(value);
                                 receiveValue.setTime(timeValue);
-                                receiveValue.setParamName(arrParamName[i]);
+                                receiveValue.setParamName(paramName);
                                 receiveValue.setTagsName(tags.getName());
                                 if(!receiveValueRepository
-                                        .findFirstByTimeAndParamNameAndTagsName(timeValue, arrParamName[i], tags.getName())
+                                        .findFirstByTimeAndParamNameAndTagsName(timeValue, paramName, tags.getName())
                                         .isPresent()) {
                                     receiveValueRepository.save(receiveValue);
                                 } else {
@@ -79,6 +94,7 @@ public class SyncDataFile {
                                 }
                             }
                         }
+                        tags = tagsRepository.save(tags);
                     }
                     br.close();
                     file.renameTo(new File(uriFolderDataBackup + "/" + file.getName()));

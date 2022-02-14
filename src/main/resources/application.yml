@@ -16,7 +16,8 @@ spring:
 server:
   port: 8080
 data:
-  uri: D:/ThangPAL/electric-smartlogger-data
-  uri-backup: D:/ThangPAL/electric-smartlogger-data/backup
+  uri: /smartlog
+  uri-backup: /smartlog/backup
+  dashboard-param: E-Total,Temp
   date:
     format: yy-MM-dd HH:mm:ss
